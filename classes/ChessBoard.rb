@@ -1,18 +1,20 @@
-class ChessBoard
+require_relative "Chess"
+
+class ChessBoard < Chess
 
   attr_reader :ply, :pieces, :white_to_move, :castling, :en_passant
 
   def initialize(params = {})
     @ply = params[:ply] || 0
     if !@ply.is_a? Integer
-      raise ArgumentError.new "ply must be of type integer"
+      raise ArgumentError.new "ply must be of type Integer"
     elsif @ply < 0
       raise ArgumentError.new "invalid ply must be positive integer"
     end
 
     @pieces = params[:pieces] || standard_board_setup
     if !@pieces.is_a? Array
-      raise ArgumentError.new "pieces must be of type array"
+      raise ArgumentError.new "pieces must be of type Array"
     elsif !valid_pieces(@pieces)
       raise ArgumentError.new "invalid pieces"
     end
@@ -22,7 +24,7 @@ class ChessBoard
 
     @castling = params[:castling] || { white_king: true, white_queen: true, black_king: true, black_queen: true }
     if !@castling.is_a? Hash
-      raise ArgumentError.new "castling must be of type hash"
+      raise ArgumentError.new "castling must be of type Hash"
     elsif !valid_castling_hash(@castling)
       raise ArgumentError.new "invalid castling"
     end
@@ -68,6 +70,3 @@ class ChessBoard
     ]
   end
 end
-
-test_board = ChessBoard.new
-
