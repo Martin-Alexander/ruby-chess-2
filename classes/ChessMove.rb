@@ -2,9 +2,9 @@ require_relative "Chess"
 
 class ChessMove < Chess
 
-  attr_reader :start_square, :end_square, :promotion
+  attr_reader :start_square, :end_square, :promotion, :in_bounds
 
-  def initialize(start_square, end_square, promotion)
+  def initialize(start_square, end_square, promotion = false)
     @start_square = start_square
     if !@start_square.is_a? Array
       raise ArgumentError.new "starting square must be of type Array"
@@ -25,13 +25,15 @@ class ChessMove < Chess
     elsif !(@promotion.is_a? FalseClass) && !((2..5).include? @promotion)
       raise ArgumentError.new "promotion must be between 2 and 5"
     end
+
+    @in_bounds = in_bounds?
   end
 
   def to_s
-    move = "#{((7 - @start_square[0]) + 97).chr}" +
-      "#{@start_square[1] + 1}" +
-      " #{((7 - @end_square[0]) + 97).chr}" +
-      "#{@end_square[1] + 1}"
+    move = "#{(@start_square[1] + 97).chr}" +
+      "#{8 - @start_square[0] }" +
+      " #{(@end_square[1] + 97).chr}" +
+      "#{8 - @end_square[0]}"
     if @promotion
       move = move + " promote to #{piece(@promotion)}"
     end
@@ -41,6 +43,17 @@ class ChessMove < Chess
   private
 
   def valid_move_square(move_square)
-    move_square.length == 2 && move_square.all? { |i| i.is_a? Integer } && move_square.all? { |i| 0 <= i && i <= 7 }
+    move_square.length == 2 && move_square.all? { |i| i.is_a? Integer }
+  end
+
+  def in_bounds?
+    @start_square[0] <= 7 &&
+      @start_square[0] >= 0 &&
+      @start_square[1] <= 7 &&
+      @start_square[1] >= 0 &&
+      @end_square[0] <= 7 &&
+      @end_square[0] >= 0 &&
+      @end_square[1] <= 7 &&
+      @end_square[1] >= 0
   end
 end

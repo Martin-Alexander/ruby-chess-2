@@ -18,4 +18,14 @@ class Chess
       when 1 then "pawn"
     end
   end
+
+  def color(int)
+    if int < 0
+      "black"
+    elsif int > 0
+      "white"
+    else
+      nil
+    end
+  end
 end

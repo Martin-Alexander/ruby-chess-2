@@ -1,18 +1,18 @@
 require_relative "tests"
 
-pawn_test_setup = [
-  [-6, 0, 0, 1, 0, 0, 0, 0],
+knight_test_setup = [
+  [-2, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0, 0, 0],
+  [0, -1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 2, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0],
-  [-1, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0],
-  [1, 1, 1, 0, 0, 0, 0, 0],
   [6, 0, 0, 0, 0, 0, 0, 0]
 ]
 
-pawn_board = ChessBoard.new(
-  board: pawn_test_setup,
+knight_board = ChessBoard.new(
+  board: knight_test_setup,
   white_to_move: true,
   castling: {
     white_king: false,
@@ -22,6 +22,6 @@ pawn_board = ChessBoard.new(
   }
 )
 
-board_visualization(pawn_board)
+board_visualization(knight_board)
 
-full_board_test(pawn_board, 1)
+full_board_test(knight_board, 2)
