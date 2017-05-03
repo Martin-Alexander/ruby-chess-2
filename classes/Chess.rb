@@ -1,31 +1,34 @@
 class Chess
 
-  private
+  module ChessPieces
+    def piece
+      if !(self.is_a? Integer)
+        raise ArgumentError.new "arguement must be of type Integer"
+      elsif !((-6..-1).to_a + (1..6).to_a).include? self
+        raise ArgumentError.new "integer #{self} is out of range"
+      end
 
-  def piece(int)
-    if !(int.is_a? Integer)
-      raise ArgumentError.new "arguement must be of type Integer"
-    elsif !((-6..-1).to_a + (1..6).to_a).include? int
-      raise ArgumentError.new "integer out of range"
+      case self.abs
+        when 6 then "king"
+        when 5 then "queen"
+        when 4 then "rook"
+        when 3 then "bishop"
+        when 2 then "knight"
+        when 1 then "pawn"
+      end
     end
 
-    case int.abs
-      when 6 then "king"
-      when 5 then "queen"
-      when 4 then "rook"
-      when 3 then "bishop"
-      when 2 then "knight"
-      when 1 then "pawn"
+    def color
+      if self < 0
+        "black"
+      elsif self > 0
+        "white"
+      else
+        nil
+      end
     end
   end
 
-  def color(int)
-    if int < 0
-      "black"
-    elsif int > 0
-      "white"
-    else
-      nil
-    end
-  end
+  Fixnum.send(:include, ChessPieces)
+
 end
