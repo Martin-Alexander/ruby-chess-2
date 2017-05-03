@@ -87,7 +87,6 @@ class ChessBoard < Chess
     @board[rank][file].color == right_color
   end
 
-
   def king_safe?(move)
     right_color = @white_to_move ? "black" : "white"
     test_board = @board.map { |i| i.dup }
@@ -141,7 +140,8 @@ class ChessBoard < Chess
       ]
 
       knights.each do |i|
-        if board[i[0]] && board[i[0]][i[1]] &&
+        if i[0] > 0 && i[1] > 0 &&
+          board[i[0]] && board[i[0]][i[1]] &&
           board[i[0]][i[1]].piece == "knight" &&
           board[i[0]][i[1]].color != king_color
           threat = true
