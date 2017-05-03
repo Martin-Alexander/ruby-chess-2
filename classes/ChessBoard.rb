@@ -21,7 +21,7 @@ class ChessBoard < Chess
       raise ArgumentError.new "invalid board"
     end
 
-    @white_to_move = params[:white_to_move] || true
+    @white_to_move = params[:white_to_move].nil? ? true : params[:white_to_move]
     raise ArgumentError.new "white_to_move must be a boolean" unless !!@white_to_move == @white_to_move
 
     @castling = params[:castling] || { white_king: true, white_queen: true, black_king: true, black_queen: true }
@@ -40,16 +40,77 @@ class ChessBoard < Chess
     end
   end
 
-  def legal_moves(rank, file)
-    case @board[rank][file].abs
-      when 1 then naive_pawn_moves(rank, file)
-      when 2 then naive_knight_moves(rank, file)
-      when 4 then naive_rook_moves(rank, file)
-      when 6 then naive_king_moves(rank, file)
+  def moves
+    output = []
+    each_square do |rank, file|
+      if right_color?(rank, file) && !naive_moves(rank, file, @board).nil?
+        naive_moves(rank, file, @board).each do |naive_move|
+          if king_safe?(naive_move)
+            output << naive_move
+          end
+        end
+      end
+    end
+    return output
+  end
+
+  def naive_moves(rank, file, board)
+    case board[rank][file].abs
+      when 1 then naive_pawn_moves(rank, file, board)
+      when 2 then naive_knight_moves(rank, file, board)
+      when 3 then naive_bishop_moves(rank, file, board)
+      when 4 then naive_rook_moves(rank, file, board)
+      when 5 then naive_queen_moves(rank, file, board)
+      when 6 then naive_king_moves(rank, file, board)
     end
   end
 
   private
+
+  def find_king(board)
+    right_color = @white_to_move ? "white" : "black"
+    output = nil
+    each_square do |rank, file|
+      if !board[rank][file].zero? &&
+        board[rank][file].piece == "king" &&
+        board[rank][file].color == right_color
+        output = [rank, file]
+        break
+      end
+    end
+    raise Error.new "missing king on board" if output.nil?
+    return output
+  end
+
+  def right_color?(rank, file)
+    right_color = @white_to_move ? "white" : "black"
+    @board[rank][file].color == right_color
+  end
+
+
+  def king_safe?(move)
+    right_color = @white_to_move ? "black" : "white"
+    test_board = @board.map { |i| i.dup }
+    test_board[move.end_square[0]][move.end_square[1]] = test_board[move.start_square[0]][move.start_square[1]]
+    test_board[move.start_square[0]][move.start_square[1]] = 0
+    king_location = find_king(test_board)
+    safety = true
+    catch :king_safety do
+      each_square do |rank, file|
+        if !(test_board[rank][file].zero?) &&
+          test_board[rank][file].color == right_color &&
+          ["rook", "bishop", "queen"].include?(test_board[rank][file].piece)
+          naive_moves(rank, file, test_board).each do |enemy_move|
+            if enemy_move.end_square == king_location
+              safety = false
+              throw :king_safety
+            end
+          end
+        end
+      end
+    end
+    return safety
+  end
 
   def valid_pieces(pieces_array)
     pieces_array.length == 8 && pieces_array.all? { |i| i.length == 8 }
@@ -81,37 +142,42 @@ class ChessBoard < Chess
     ]
   end
 
-  def naive_pawn_moves(rank, file)
+  def naive_pawn_moves(rank, file, board)
     output = []
-    piece = @board[rank][file]
+    piece = board[rank][file]
     v_direction = piece > 0 ? -1 : 1
-
-    if @board[rank + 1 * v_direction][file].zero? &&
+    if !board[rank + 1 * v_direction].nil? &&
+      board[rank + 1 * v_direction][file].zero? &&
       output << ChessMove.new([rank, file], [rank + 1 * v_direction, file])
-      if @board[rank + 2 * v_direction][file].zero? &&
-        ((rank == 1 && color(piece) == "black") || (rank == 6 && color(piece) == "white"))
+      if !board[rank + 2 * v_direction].nil?
+        board[rank + 2 * v_direction][file].zero? &&
+        ((rank == 1 && piece.color == "black") || (rank == 6 && piece.color == "white"))
         output << ChessMove.new([rank, file], [rank + 2 * v_direction, file])
       end
     end
-    if !(@board[rank + 1 * v_direction][file - 1]).zero? &&
-      color(piece) != color(@board[rank + 1 * v_direction][file - 1])
+    if !board[rank + 1 * v_direction].nil? &&
+      !board[rank + 1 * v_direction][file - 1].nil? &&
+      !(board[rank + 1 * v_direction][file - 1]).zero? &&
+      piece.color != board[rank + 1 * v_direction][file - 1].color
       output << ChessMove.new([rank, file], [rank + 1 * v_direction, file - 1])
     end
-    if !(@board[rank + 1 * v_direction][file + 1]).zero? &&
-      color(piece) != color(@board[rank + 1 * v_direction][file + 1])
+    if !board[rank + 1 * v_direction].nil? &&
+      !board[rank + 1 * v_direction][file + 1].nil? &&
+      !(board[rank + 1 * v_direction][file + 1]).zero? &&
+      piece.color != board[rank + 1 * v_direction][file + 1].color
       output << ChessMove.new([rank, file], [rank + 1 * v_direction, file + 1])
     end
     remove_out_of_bounds(output)
   end
 
-  def naive_king_moves(rank, file)
+  def naive_king_moves(rank, file, board)
     output = []
-    piece = @board[rank][file]
-
+    piece = board[rank][file]
     [-1, 0, 1].each do |rank_inc|
       [-1, 0, 1].each do |file_inc|
         if !(rank_inc.zero? && file_inc.zero?) &&
-          !(color(piece) == color(@board[rank + rank_inc][file + file_inc]))
+          !board[rank + rank_inc].nil? && !board[rank + rank_inc][file + file_inc].nil? &&
+          !(piece.color == board[rank + rank_inc][file + file_inc].color)
           output << ChessMove.new([rank, file], [rank + rank_inc, file + file_inc])
         end
       end
@@ -119,70 +185,80 @@ class ChessBoard < Chess
     remove_out_of_bounds(output)
   end
 
-  def naive_knight_moves(rank, file)
+  def naive_knight_moves(rank, file, board)
     output = []
-    piece = @board[rank][file]
-
+    piece = board[rank][file]
     [[-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1]].each do |i|
-      if (@board[rank + i[0]][file + i[1]].zero? ||
-        color(piece) != color(@board[rank + i[0]][file + i[1]]))
+      if !board[rank + i[0]].nil? &&
+        !board[rank + i[0]][file + i[1]].nil? &&
+        (board[rank + i[0]][file + i[1]].zero? ||
+        piece.color != board[rank + i[0]][file + i[1]].color)
         output << ChessMove.new([rank, file], [rank + i[0], file + i[1]])
       end
     end
     remove_out_of_bounds(output)
   end
 
-  def naive_rook_moves(rank, file)
+  def naive_rook_moves(rank, file, board)
     output = []
-    piece = @board[rank][file]
+    variables = [[-1, 0, rank], [1, 0, 7 - rank], [0, -1, file], [0, 1, 7 - file]]
+    variables.each { |i| move_along(i[0], i[1], i[2], rank, file, output, board) }
+    return output
+  end
 
-    (1..rank).each do |rank_inc|
-      if @board[rank - rank_inc][file].zero?
-        output << ChessMove.new([rank, file], [rank - rank_inc, file])
-      elsif color(@board[rank - rank_inc][file]) != color(piece)
-        output << ChessMove.new([rank, file], [rank - rank_inc, file])
+  def naive_bishop_moves(rank, file, board)
+    output = []
+    variables = [
+      [-1, 1, [rank, 7 - file].min],
+      [-1, -1, [rank, file].min],
+      [1, -1, [7 - rank, file].min],
+      [1, 1, [7 - rank, 7 - file].min]
+    ]
+    variables.each { |i| move_along(i[0], i[1], i[2], rank, file, output, board) }
+    return output
+  end
+
+  def naive_queen_moves(rank, file, board)
+    output = []
+    output << naive_rook_moves(rank, file, board)
+    output << naive_bishop_moves(rank, file, board)
+    return output.flatten
+  end
+
+  def move_along (rank_mod, file_mod, sequence_builder, rank, file, output, board)
+    piece = board[rank][file]
+    (1..sequence_builder).each do |increment|
+      move = ChessMove.new([rank, file], [rank + increment * rank_mod, file + increment * file_mod])
+      if board[rank + increment * rank_mod][file + increment * file_mod].zero?
+        output << move
+      elsif board[rank + increment * rank_mod][file + increment * file_mod].color != piece.color
+        output << move
         break
       else
         break
       end
     end
+  end
 
-    (1..7 - rank).each do |rank_inc|
-      if @board[rank + rank_inc][file].zero?
-        output << ChessMove.new([rank, file], [rank + rank_inc, file])
-      elsif color(@board[rank + rank_inc][file]) != color(piece)
-        output << ChessMove.new([rank, file], [rank + rank_inc, file])
-        break
-      else
-        break
+  def each_square
+    (0..7).each do |rank|
+      (0..7).each do |file|
+        yield(rank, file)
       end
     end
-
-    (1..file).each do |file_inc|
-      if @board[rank][file - file_inc].zero?
-        output << ChessMove.new([rank, file], [rank, file - file_inc])
-      elsif color(@board[rank][file - file_inc]) != color(piece)
-        output << ChessMove.new([rank, file], [rank, file - file_inc])
-        break
-      else
-        break
-      end
-    end
-
-    (1..7 - file).each do |file_inc|
-      if @board[rank][file + file_inc].zero?
-        output << ChessMove.new([rank, file], [rank, file + file_inc])
-      elsif color(@board[rank][file + file_inc]) != color(piece)
-        output << ChessMove.new([rank, file], [rank, file + file_inc])
-        break
-      else
-        break
-      end
-    end
-    remove_out_of_bounds(output)
   end
 
   def remove_out_of_bounds(output)
     output.select { |i| i.in_bounds }
+  end
+
+  def board_visualization(chess_board)
+    if !chess_board.is_a? ChessBoard
+      raise ArgumentError.new "board_visualization must be passed arguement of type ChessBoard"
+    end
+    chess_board.board.each_with_index do |row, i|
+      row.each { |square| print square < 0 ? "#{square} " : " #{square} " }
+      puts
+    end
   end
 end
