@@ -96,10 +96,13 @@ class ChessBoard < Chess
     king_location = find_king(test_board)
     safety = true
     catch :king_safety do
+      if local_threats_to_king?(test_board, king_location[0], king_location[1])
+        safety = false
+        throw :king_safety
+      end
       each_square do |rank, file|
-        if !(test_board[rank][file].zero?) &&
-          test_board[rank][file].color == right_color &&
-          ["rook", "bishop", "queen"].include?(test_board[rank][file].piece)
+        if ["rook", "bishop", "queen"].include?(test_board[rank][file].piece) &&
+          test_board[rank][file].color == right_color
           naive_moves(rank, file, test_board).each do |enemy_move|
             if enemy_move.end_square == king_location
               safety = false
@@ -110,6 +113,43 @@ class ChessBoard < Chess
       end
     end
     return safety
+  end
+
+  def local_threats_to_king?(board, rank, file)
+    threat = false
+    catch :king_safety do
+      if @white_to_move
+        king_color = "white"
+        pawns = [[rank - 1, file - 1], [rank - 1, file + 1]]
+      else
+        king_color = "black"
+        pawns = [[rank + 1, file - 1], [rank + 1, file + 1]]
+      end
+
+      pawns.each do |i|
+        if board[i[0]] && board[i[0]][i[1]] &&
+          board[i[0]][i[1]].piece == "pawn" &&
+          board[i[0]][i[1]].color != king_color
+          threat = true
+          throw :king_safety
+        end
+      end
+
+      knights = [
+        [rank - 2, file + 1], [rank - 1, file + 2], [rank + 1, file + 2], [rank + 2, file + 1],
+        [rank + 2, file - 1], [rank + 1, file - 2], [rank - 1, file - 2], [rank - 2, file - 1]
+      ]
+
+      knights.each do |i|
+        if board[i[0]] && board[i[0]][i[1]] &&
+          board[i[0]][i[1]].piece == "knight" &&
+          board[i[0]][i[1]].color != king_color
+          threat = true
+          throw :king_safety
+        end
+      end
+    end
+    return threat
   end
 
   def valid_pieces(pieces_array)

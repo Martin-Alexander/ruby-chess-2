@@ -4,7 +4,7 @@ class Chess
     def piece
       if !(self.is_a? Integer)
         raise ArgumentError.new "arguement must be of type Integer"
-      elsif !((-6..-1).to_a + (1..6).to_a).include? self
+      elsif !((-6..-1).to_a + (0..6).to_a).include? self
         raise ArgumentError.new "integer #{self} is out of range"
       end
 
@@ -15,6 +15,7 @@ class Chess
         when 3 then "bishop"
         when 2 then "knight"
         when 1 then "pawn"
+        when 0 then nil
       end
     end
 
