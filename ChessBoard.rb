@@ -40,6 +40,18 @@ class ChessBoard < Chess
     end
   end
 
+  def move(move)
+    setup
+    legal = moves.any? do |legal_move|
+      legal_move.start_square == move.start_square &&
+      legal_move.end_square == move.end_square
+    end
+    if legal
+      new_board = execute_move(@board, move)
+    end
+    return new_board
+  end
+
   def moves
     output = []
     each_square do |rank, file|
@@ -54,6 +66,15 @@ class ChessBoard < Chess
     return output
   end
 
+  private
+
+  def execute_move(board, move)
+    board_copy = board.map { |i| i.dup }
+    board_copy[move.end_square[0]][move.end_square[1]] = board_copy[move.start_square[0]][move.start_square[1]]
+    board_copy[move.start_square[0]][move.start_square[1]] = 0
+    ChessBoard.new(ply: @ply + 1, board: board_copy, white_to_move: !@white_to_move, castling: @castling, en_passant: @en_passant)
+  end
+
   def naive_moves(rank, file, board)
     case board[rank][file].abs
       when 1 then naive_pawn_moves(rank, file, board)
@@ -64,8 +85,6 @@ class ChessBoard < Chess
       when 6 then naive_king_moves(rank, file, board)
     end
   end
-
-  private
 
   def find_king(board)
     right_color = @white_to_move ? "white" : "black"
