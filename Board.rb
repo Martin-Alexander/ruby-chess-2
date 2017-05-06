@@ -46,15 +46,15 @@ class Board
 
   def move(move)
     if move.is_a? String
-      move = Move.new([move[0].to_i, move[2].to_i], [move[2].to_i, move[3].to_i])
-      byebug
+      move = Move.new([move[0].to_i, move[1].to_i], [move[2].to_i, move[3].to_i], promotion: move[4].to_i)
     end
     legal = moves.any? do |legal_move|
       legal_move.start_square == move.start_square &&
       legal_move.end_square == move.end_square
     end
     if legal
-      new_board = execute_move(@board_data, move)
+      new_board_data = execute_move(@board_data, move)
+      new_board = Board.new(ply: @ply + 1, board_data: new_board_data, white_to_move: !@white_to_move, castling: @castling, en_passant: @en_passant)
     end
     return new_board
   end
@@ -63,7 +63,7 @@ class Board
     output = []
     each_square do |rank, file|
       if right_color?(rank, file) && !naive_moves(rank, file, @board_data).nil?
-        naive_moves(rank, file, @board_data).each do |naive_move|
+        naive_moves(rank, file, @board_data, @castling).each do |naive_move|
           if king_safe?(naive_move)
             output << naive_move
           end
@@ -84,19 +84,20 @@ class Board
 
   def execute_move(board, move)
     board_copy = board.map { |i| i.dup }
-    board_copy[move.end_square[0]][move.end_square[1]] = board_copy[move.start_square[0]][move.start_square[1]]
+    piece_on_arrival = move.promotion.zero? ? board_copy[move.start_square[0]][move.start_square[1]] : move.promotion
+    board_copy[move.end_square[0]][move.end_square[1]] = piece_on_arrival
     board_copy[move.start_square[0]][move.start_square[1]] = 0
-    Board.new(ply: @ply + 1, board_data: board_copy, white_to_move: !@white_to_move, castling: @castling, en_passant: @en_passant)
+    return board_copy
   end
 
-  def naive_moves(rank, file, board)
+  def naive_moves(rank, file, board, castling)
     case board[rank][file].abs
       when 1 then naive_pawn_moves(rank, file, board)
       when 2 then naive_knight_moves(rank, file, board)
       when 3 then naive_bishop_moves(rank, file, board)
       when 4 then naive_rook_moves(rank, file, board)
       when 5 then naive_queen_moves(rank, file, board)
-      when 6 then naive_king_moves(rank, file, board)
+      when 6 then naive_king_moves(rank, file, board, castling)
     end
   end
 
@@ -121,9 +122,7 @@ class Board
 
   def king_safe?(move)
     right_color = @white_to_move ? "black" : "white"
-    test_board = @board_data.map { |i| i.dup }
-    test_board[move.end_square[0]][move.end_square[1]] = test_board[move.start_square[0]][move.start_square[1]]
-    test_board[move.start_square[0]][move.start_square[1]] = 0
+    test_board = execute_move(@board_data, move)
     king_location = find_king(test_board)
     safety = true
     catch :king_safety do
@@ -242,7 +241,7 @@ class Board
     remove_out_of_bounds(output.flatten)
   end
 
-  def naive_king_moves(rank, file, board)
+  def naive_king_moves(rank, file, board, castling)
     output = []
     piece = board[rank][file]
     [-1, 0, 1].each do |rank_inc|
@@ -252,6 +251,21 @@ class Board
           !(piece.color == board[rank + rank_inc][file + file_inc].color)
           output << Move.new([rank, file], [rank + rank_inc, file + file_inc])
         end
+      end
+    end
+    if piece.color == "white"
+      if castling[:white_king] && board[7][5].zero? && board[7][6].zero?
+        output << Move.new([rank, file], [7, 6], castling: :white_king)
+      end
+      if castling[:white_quenn] && board[7][3].zero? && board[7][2].zero? && board[7][1].zero?
+        output << Move.new([rank, file], [7, 2], castling: :white_queen)
+      end
+    else
+      if castling[:black_king] && board[0][5].zero? && board[0][6].zero?
+        output << Move.new([rank, file], [0, 6], castling: :black_king)
+      end
+      if castling[:black_quenn] && board[0][3].zero? && board[0][2].zero? && board[0][1].zero?
+        output << Move.new([rank, file], [0, 2], castling: :black_queen)
       end
     end
     remove_out_of_bounds(output)
@@ -300,11 +314,11 @@ class Board
   def pawn_move_builder(start_square, end_square, piece)
     output = []
     if piece.color == "white" && end_square[0] == 0
-      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, i) } 
+      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, promotion: i) } 
     elsif piece.color == "black" && end_square[0] == 7
-      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, i) }
+      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, promotion: i) }
     else 
-      output << Move.new(start_square, end_square, 0)
+      output << Move.new(start_square, end_square)
     end
     return output
   end

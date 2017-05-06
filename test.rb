@@ -15,9 +15,10 @@ promotion_test_board = [
 	[0, 0, 0, 0, 0, 0, 0, 0],
 	[0, 0, 0, 0, 0, 0, 0, 0],
 	[0, 0, 0, 0, 0, 0, 0, 0],
-	[1, 1, 1, 1, 1, 1, 1, 1],
-	[4, 2, 3, 5, 6, 3, 2, 4]
+	[1, 1, 1, 1, 1, 1, -1, 1],
+	[4, 2, 3, 5, 6, 3, 0, 4]
 ]
 
 promotion_test = Board.new(board_data: promotion_test_board)
 
+promotion_test.move("11005").board_visualization
