@@ -62,7 +62,7 @@ class Board
   def moves
     output = []
     each_square do |rank, file|
-      if right_color?(rank, file) && !naive_moves(rank, file, @board_data).nil?
+      if right_color?(rank, file) && !naive_moves(rank, file, @board_data, @castling).nil?
         naive_moves(rank, file, @board_data, @castling).each do |naive_move|
           if king_safe?(naive_move)
             output << naive_move
@@ -133,7 +133,7 @@ class Board
       each_square do |rank, file|
         if ["rook", "bishop", "queen"].include?(test_board[rank][file].piece) &&
           test_board[rank][file].color == right_color
-          naive_moves(rank, file, test_board).each do |enemy_move|
+          naive_moves(rank, file, test_board, {}).each do |enemy_move|
             if enemy_move.end_square == king_location
               safety = false
               throw :king_safety

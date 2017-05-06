@@ -21,4 +21,19 @@ promotion_test_board = [
 
 promotion_test = Board.new(board_data: promotion_test_board)
 
-promotion_test.move("11005").board_visualization
+castling_test_board = [
+	[-4, -2, -3, -5, -6, -3, -2, -4],
+	[-1, -1, -1, -1, -1, -1, -1, -1],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[1, 1, 1, 1, 1, 1, 1, 1],
+	[4, 2, 3, 5, 6, 0, 0, 4]
+]
+
+castling_test = Board.new(board_data: castling_test_board)
+
+castling_test.board_visualization
+
+p castling_test.moves[-3]
