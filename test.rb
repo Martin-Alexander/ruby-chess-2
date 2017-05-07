@@ -34,6 +34,40 @@ castling_test_board = [
 
 castling_test = Board.new(board_data: castling_test_board)
 
-castling_test.board_visualization
+game_test_board = [
+	[-4, -2, -3, -5, -6, -3, -2, -4],
+	[-1, -1, -1, -1, -1, -1, -1, -1],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0],
+	[1, 1, 1, 1, 1, 1, 1, 1],
+	[4, 2, 3, 5, 6, 4, 2, 4]
+]
 
-p castling_test.moves[-3]
+game_test = Board.new
+
+while true
+	print "Move: "
+	move = gets.chomp
+	new_board = game_test.move(move)
+	puts "\e[H\e[2J"
+	if new_board
+		game_test = new_board
+	else
+		puts "error"
+	end
+	puts game_test.ply
+	game_test.board_visualization
+end
+
+
+
+
+
+
+
+
+
+
+
