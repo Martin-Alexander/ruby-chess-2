@@ -33,13 +33,12 @@ class Move
   Fixnum.send(:include, ChessPieces)
 
   attr_reader :start_square, :end_square, :promotion, :in_bounds
-
+  
   def initialize(start_square, end_square, params ={})
     @start_square = start_square
     @end_square = end_square
     @in_bounds = in_bounds?
     @promotion = params[:promotion] || 0
-    @castling = params[:castling]
   end
 
   def to_s
