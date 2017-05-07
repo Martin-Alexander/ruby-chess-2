@@ -63,10 +63,13 @@ class Board
   def moves
     output = []
     each_square do |rank, file|
-      if right_color?(rank, file) && !naive_moves(rank, file, @board_data, @castling).nil?
-        naive_moves(rank, file, @board_data, @castling).each do |naive_move|
-          if king_safe?(naive_move)
-            output << naive_move
+      if right_color?(rank, file) 
+        naive_moves = naive_moves(rank, file, @board_data, @castling)
+        if !naive_moves.nil?
+          naive_moves.each do |naive_move|
+            if king_safe?(naive_move)
+              output << naive_move
+            end
           end
         end
       end
@@ -91,13 +94,13 @@ class Board
     elsif move.start_square == [0, 4]
       castling_data[:black_king] = false
       castling_data[:black_queen] = false
-    elsif move.start_square == [7, 7]
+    elsif move.start_square == [7, 7] || move.end_square == [7, 7]
       castling_data[:white_king] = false
-    elsif move.start_square == [7, 0]
+    elsif move.start_square == [7, 0] || move.end_square == [7, 0]
       castling_data[:white_queen] = false
-    elsif move.start_square == [0, 0]
+    elsif move.start_square == [0, 0] || move.end_square == [0, 0]
       castling_data[:black_queen] = false
-    elsif move.start_square == [0, 7]
+    elsif move.start_square == [0, 7] || move.end_square == [0, 7]
       castling_data[:black_king] = false
     end
     return board
@@ -259,7 +262,7 @@ class Board
     if !board[rank + 1 * v_direction].nil? &&
       board[rank + 1 * v_direction][file].zero? &&
       output << pawn_move_builder([rank, file], [rank + 1 * v_direction, file], piece)
-      if !board[rank + 2 * v_direction].nil?
+      if !board[rank + 2 * v_direction].nil? &&
         board[rank + 2 * v_direction][file].zero? &&
         ((rank == 1 && piece.color == "black") || (rank == 6 && piece.color == "white"))
         output << pawn_move_builder([rank, file], [rank + 2 * v_direction, file], piece)
@@ -280,6 +283,18 @@ class Board
     remove_out_of_bounds(output.flatten)
   end
 
+  def pawn_move_builder(start_square, end_square, piece)
+    output = []
+    if piece.color == "white" && end_square[0] == 0
+      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, promotion: i) } 
+    elsif piece.color == "black" && end_square[0] == 7
+      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, promotion: i) }
+    else 
+      output << Move.new(start_square, end_square)
+    end
+    return output
+  end
+
   def naive_king_moves(rank, file, board, castling)
     output = []
     piece = board[rank][file]
@@ -296,14 +311,14 @@ class Board
       if castling[:white_king] && board[7][5].zero? && board[7][6].zero?
         output << Move.new([rank, file], [7, 6])
       end
-      if castling[:white_quenn] && board[7][3].zero? && board[7][2].zero? && board[7][1].zero?
+      if castling[:white_queen] && board[7][3].zero? && board[7][2].zero? && board[7][1].zero?
         output << Move.new([rank, file], [7, 2])
       end
     else
       if castling[:black_king] && board[0][5].zero? && board[0][6].zero?
         output << Move.new([rank, file], [0, 6])
       end
-      if castling[:black_quenn] && board[0][3].zero? && board[0][2].zero? && board[0][1].zero?
+      if castling[:black_queen] && board[0][3].zero? && board[0][2].zero? && board[0][1].zero?
         output << Move.new([rank, file], [0, 2])
       end
     end
@@ -350,17 +365,6 @@ class Board
     return output.flatten
   end
 
-  def pawn_move_builder(start_square, end_square, piece)
-    output = []
-    if piece.color == "white" && end_square[0] == 0
-      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, promotion: i) } 
-    elsif piece.color == "black" && end_square[0] == 7
-      [2, 3, 4, 5].each { |i| output << Move.new(start_square, end_square, promotion: i) }
-    else 
-      output << Move.new(start_square, end_square)
-    end
-    return output
-  end
 
   def move_along (rank_mod, file_mod, sequence_builder, rank, file, output, board)
     piece = board[rank][file]
