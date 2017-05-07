@@ -54,7 +54,8 @@ class Board
     end
     if legal
       new_board_data = execute_move(@board_data, move)
-      new_board = Board.new(ply: @ply + 1, board_data: new_board_data, white_to_move: !@white_to_move, castling: @castling, en_passant: @en_passant)
+      new_board = Board.new(ply: @ply + 1, board_data: new_board_data, white_to_move: !@white_to_move, castling: @castling.dup, en_passant: @en_passant.dup)
+      new_board = castling_update(new_board, move)
     end
     return new_board
   end
@@ -82,11 +83,49 @@ class Board
 
   private
 
+  def castling_update(board, move)
+    castling_data = board.castling
+    if move.start_square == [7, 4]
+      castling_data[:white_king] = false 
+      castling_data[:white_queen] = false
+    elsif move.start_square == [0, 4]
+      castling_data[:black_king] = false
+      castling_data[:black_queen] = false
+    elsif move.start_square == [7, 7]
+      castling_data[:white_king] = false
+    elsif move.start_square == [7, 0]
+      castling_data[:white_queen] = false
+    elsif move.start_square == [0, 0]
+      castling_data[:black_queen] = false
+    elsif move.start_square == [0, 7]
+      castling_data[:black_king] = false
+    end
+    return board
+  end
+
   def execute_move(board, move)
     board_copy = board.map { |i| i.dup }
-    piece_on_arrival = move.promotion.zero? ? board_copy[move.start_square[0]][move.start_square[1]] : move.promotion
+    if board_copy[move.start_square[0]][move.start_square[1]] == "white"
+      promoted_piece = move.promotion
+    else 
+      promoted_piece = move.promotion * -1
+    end
+    piece_on_arrival = move.promotion.zero? ? board_copy[move.start_square[0]][move.start_square[1]] : promoted_piece
     board_copy[move.end_square[0]][move.end_square[1]] = piece_on_arrival
     board_copy[move.start_square[0]][move.start_square[1]] = 0
+    if move.start_square == [7, 4] && move.end_square == [7, 6]
+        board_copy[7][7] = 0
+        board_copy[7][5] = 4
+    elsif move.start_square == [7, 4] && move.end_square == [7, 2]
+        board_copy[7][0] = 0
+        board_copy[7][4] = 4
+    elsif move.start_square == [0, 4] && move.end_square == [0, 6]
+        board_copy[0][7] = 0
+        board_copy[0][5] = -4
+    elsif move.start_square == [0, 4] && move.end_square == [0, 2]
+        board_copy[0][0] = 0
+        board_copy[0][3] = -4
+    end
     return board_copy
   end
 
@@ -255,17 +294,17 @@ class Board
     end
     if piece.color == "white"
       if castling[:white_king] && board[7][5].zero? && board[7][6].zero?
-        output << Move.new([rank, file], [7, 6], castling: :white_king)
+        output << Move.new([rank, file], [7, 6])
       end
       if castling[:white_quenn] && board[7][3].zero? && board[7][2].zero? && board[7][1].zero?
-        output << Move.new([rank, file], [7, 2], castling: :white_queen)
+        output << Move.new([rank, file], [7, 2])
       end
     else
       if castling[:black_king] && board[0][5].zero? && board[0][6].zero?
-        output << Move.new([rank, file], [0, 6], castling: :black_king)
+        output << Move.new([rank, file], [0, 6])
       end
       if castling[:black_quenn] && board[0][3].zero? && board[0][2].zero? && board[0][1].zero?
-        output << Move.new([rank, file], [0, 2], castling: :black_queen)
+        output << Move.new([rank, file], [0, 2])
       end
     end
     remove_out_of_bounds(output)
